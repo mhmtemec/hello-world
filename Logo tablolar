@@ -1,0 +1,11 @@
+SELECT        CODE AS Kod, NAME AS Ad, SUM(CASE WHEN SOURCEINDEX = 1 THEN onhand ELSE 0 END) AS Fabrika, SUM(CASE WHEN SOURCEINDEX = 2 THEN onhand ELSE 0 END) AS Şube, 
+                         SUM(CASE WHEN SOURCEINDEX = 0 THEN onhand ELSE 0 END) AS Merkez, SUM(onhand) AS Toplam
+FROM            (SELECT        SUM(ISNULL(dbo.LG_212_08_GETSTTRANSCOEF(iri.TRCODE, iri.IOCODE, iri.LINETYPE, 0, iri.LPRODSTAT, iri.LPRODRSRVSTAT, 0, iri.SOURCELINK, iri.BILLED, 12) 
+                                                    * iri.AMOUNT * dbo.LG_212_08_GETUNITCOEF(iri.UINFO1, iri.UINFO2), 0)) AS onhand, inv.CODE, iri.DELVRYCODE, iri.SOURCEINDEX, inv.NAME
+                          FROM            dbo.LG_212_08_STLINE AS iri INNER JOIN
+                                                    dbo.LG_212_08_STFICHE AS ir ON iri.STFICHEREF = ir.LOGICALREF INNER JOIN
+                                                    dbo.LG_212_ITEMS AS inv ON inv.LOGICALREF = iri.STOCKREF
+                          WHERE        (iri.CANCELLED = 0) AND (iri.STATUS = 0) AND (iri.STOCKREF <> 0) AND (iri.LINETYPE NOT IN (2, 3, 7)) AND (NOT (iri.TRCODE IN (5, 10))) OR
+                                                    (iri.CANCELLED = 0) AND (iri.STATUS = 0) AND (iri.STOCKREF <> 0) AND (iri.LINETYPE NOT IN (2, 3, 7)) AND (NOT (iri.STFICHEREF = 0))
+                          GROUP BY iri.STOCKREF, iri.DATE_, iri.SOURCEINDEX, iri.VARIANTREF, iri.DELVRYCODE, inv.CODE, inv.NAME) AS X
+GROUP BY CODE, NAME, DELVRYCODE
